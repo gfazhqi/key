@@ -6,6 +6,7 @@ import random
 import time
 import uuid
 from loguru import logger
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Disable logging for httpx
 httpx_log = logger.bind(name="httpx").level("WARNING")
@@ -44,7 +45,7 @@ EVENTS_DELAY = 20000 / 1000  # converting milliseconds to seconds
 
 async def load_proxy(file_path):
     try:
-        if os.path.exists(file_path):
+        if os.path.exists(file_path)):
             with open(file_path, 'r') as file:
                 proxy = file.read().strip()
                 return proxy
@@ -62,6 +63,7 @@ async def generate_client_id():
     return f"{timestamp}-{random_numbers}"
 
 
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def login(client_id, app_token, proxy=None):
     async with httpx.AsyncClient(proxies=proxy) as client:
         response = await client.post(
@@ -73,6 +75,7 @@ async def login(client_id, app_token, proxy=None):
         return data['clientToken']
 
 
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def emulate_progress(client_token, promo_id, proxy=None):
     async with httpx.AsyncClient(proxies=proxy) as client:
         response = await client.post(
@@ -85,6 +88,7 @@ async def emulate_progress(client_token, promo_id, proxy=None):
         return data['hasCode']
 
 
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def generate_key(client_token, promo_id, proxy=None):
     async with httpx.AsyncClient(proxies=proxy) as client:
         response = await client.post(
@@ -143,8 +147,8 @@ if __name__ == "__main__":
     logger.info(f"Generating {key_count} key(s) for {games[game_choice]['name']} using proxy from {proxy_file if proxy else 'no proxy'}")
     keys, game_name = asyncio.run(main(game_choice, key_count, proxy))
     if keys:
-        logger.success("Generated Key(s) was successfully saved to keys.txt.")
-        with open('keys.txt', 'a') as file:  # Open the file in append mode
+        logger.success("Generated Key(s) was successfully saved to codes.txt.")
+        with open('codes.txt', 'a') as file:  # Open the file in append mode
             for key in keys:
                 formatted_key = f"{game_name} : {key}"
                 logger.success(formatted_key)
