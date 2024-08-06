@@ -45,7 +45,7 @@ EVENTS_DELAY = 20000 / 1000  # converting milliseconds to seconds
 
 async def load_proxy(file_path):
     try:
-        if os.path.exists(file_path)):
+        if os.path.exists(file_path):
             with open(file_path, 'r') as file:
                 proxy = file.read().strip()
                 return proxy
